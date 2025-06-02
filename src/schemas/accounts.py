@@ -46,8 +46,10 @@ class UserRegistrationRequestSchema(BaseModel):
 
 class UserRegistrationResponseSchema(BaseModel):
     id: int
-    email: str
+    email: EmailStr
     is_active: bool
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserLoginRequestSchema(BaseModel):

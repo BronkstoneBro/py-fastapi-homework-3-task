@@ -18,6 +18,7 @@ from exceptions import BaseSecurityError
 from schemas import (
     UserRegistrationRequestSchema,
     UserRegistrationResponseSchema,
+    MessageResponseSchema,
 )
 from schemas.accounts import (
     UserLoginRequestSchema,
@@ -78,7 +79,7 @@ async def register_user(
 async def activate_account(
     activation_data: AccountActivationRequestSchema,
     db: AsyncSession = Depends(get_db),
-) -> dict:
+) -> MessageResponseSchema:
     """
     Activate a user account using the activation token.
     """
@@ -123,7 +124,9 @@ async def activate_account(
         user.is_active = True
         await db.delete(user.activation_token)
         await db.commit()
-        return {"message": "User account activated successfully."}
+        return MessageResponseSchema(
+            message="User account activated successfully."
+        )
     except SQLAlchemyError:
         await db.rollback()
         raise HTTPException(
@@ -178,7 +181,7 @@ async def login_user(
 async def request_password_reset(
     reset_data: PasswordResetRequestSchema,
     db: AsyncSession = Depends(get_db),
-) -> dict:
+) -> MessageResponseSchema:
     """
     Request a password reset token.
     """
@@ -186,10 +189,9 @@ async def request_password_reset(
         select(UserModel).where(UserModel.email == reset_data.email)
     )
 
-    # Always return the same message for security
-    generic_message = {
-        "message": "If you are registered, you will receive an email with instructions."
-    }
+    generic_message = MessageResponseSchema(
+        message="If you are registered, you will receive an email with instructions."
+    )
 
     if not user or not user.is_active:
         return generic_message
@@ -219,7 +221,7 @@ async def request_password_reset(
 async def complete_password_reset(
     reset_data: PasswordResetCompleteSchema,
     db: AsyncSession = Depends(get_db),
-) -> dict:
+) -> MessageResponseSchema:
     """
     Complete the password reset process using the reset token.
     """
@@ -263,7 +265,7 @@ async def complete_password_reset(
         user.password = reset_data.password
         await db.delete(user.password_reset_token)
         await db.commit()
-        return {"message": "Password reset successfully."}
+        return MessageResponseSchema(message="Password reset successfully.")
     except SQLAlchemyError:
         await db.rollback()
         raise HTTPException(
